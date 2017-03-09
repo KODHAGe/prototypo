@@ -5,7 +5,7 @@ export default class SitePortal extends React.Component {
 	componentWillMount() {
 		HoodieApi.setup()
 			.then(() => {
-				location.href = '#/dashboard';
+				//location.href = '#/dashboard';
 			})
 			.catch(() => {
 				location.href = '#/signin';

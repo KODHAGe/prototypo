@@ -5,14 +5,16 @@ import {hashHistory} from 'react-router';
 import {userStore, prototypoStore, undoableStore} from '../stores/creation.stores.jsx';
 import LocalServer from '../stores/local-server.stores.jsx';
 import LocalClient from '../stores/local-client.stores.jsx';
+
 import {Typefaces} from '../services/typefaces.services.js';
-import {copyFontValues, loadFontValues, saveAppValues} from '../helpers/loadValues.helpers.js';
-import {setupFontInstance} from '../helpers/font.helpers.js';
 import {FontValues} from '../services/values.services.js';
-import {BatchUpdate} from '../helpers/undo-stack.helpers.js';
 import Log from '../services/log.services.js';
 import HoodieApi from '../services/hoodie.services.js';
 import {loadStuff} from '../helpers/appSetup.helpers.js';
+
+import {copyFontValues, loadFontValues, saveAppValues} from '../helpers/loadValues.helpers.js';
+import {setupFontInstance} from '../helpers/font.helpers.js';
+import {BatchUpdate} from '../helpers/undo-stack.helpers.js';
 
 slug.defaults.mode = 'rfc3986';
 slug.defaults.modes.rfc3986.remove = /[-_\/\\\.]/g;
@@ -56,32 +58,33 @@ window.addEventListener('fluxServer.setup', () => {
 const hasher = XXHash(0xDEADBEEF);
 
 export default {
+	'/create-font-instance': ({typedataJSON, appValues}) => {
+		const typedata = JSON.parse(typedataJSON);
+		const familyName = typedata.fontinfo.familyName;
+		const controls = typedata.controls;
+		const presets = typedata.presets;
+		const tags = typedata.fontinfo.tags;
+		const db = appValues.values.variantSelected.db;
+
+		localClient.dispatchAction('/store-value-font', {
+			familyName,
+			db,
+			typedata,
+		});
+
+		localClient.dispatchAction('/create-font', familyName);
+		localClient.dispatchAction('/load-params', {controls, presets});
+		localClient.dispatchAction('/load-tags', tags);
+		loadFontValues(typedata, db);
+	},
 	'/load-font-instance': async ({appValues}) => {
 		try {
-			const {
+			const template = appValues.values.familySelected ? appValues.values.familySelected.template : undefined;
+			const typedataJSON = await Typefaces.getFont(template || 'venus.ptf');
+			localClient.dispatchAction('/create-font-instance', {
 				typedataJSON,
-				familyName,
-				controls,
-				presets,
-				tags,
-				workerUrl,
-				workerDeps,
-				db,
-				typedata,
-			} = await setupFontInstance(appValues);
-
-			localClient.dispatchAction('/store-value-font', {
-				familyName,
-				db,
-				workerUrl,
-				workerDeps,
-				typedataJSON,
+				appValues,
 			});
-
-			localClient.dispatchAction('/create-font', familyName);
-			localClient.dispatchAction('/load-params', {controls, presets});
-			localClient.dispatchAction('/load-tags', tags);
-			loadFontValues(typedata, db);
 		}
 		catch (err) {
 			trackJs.track(err);

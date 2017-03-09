@@ -32,7 +32,7 @@ const defaultValues = {
 			pos: ['Point', 457, -364],
 			familySelected: {
 				name: 'My first font',
-				template: 'elzevir.ptf',
+				template: 'venus.ptf',
 			},
 			variantSelected: {
 				id: 'deadbeef',
@@ -41,7 +41,7 @@ const defaultValues = {
 			},
 			library: [{
 				name: 'My first font',
-				template: 'elzevir.ptf',
+				template: 'venus.ptf',
 				variants: [{
 					id: 'deadbeef',
 					name: 'Regular',

@@ -3,6 +3,7 @@
 import {Typefaces} from '../services/typefaces.services.js';
 
 import {rawToEscapedContent} from '../helpers/input-transform.helpers.js';
+import FontPrecursor from '../prototypo.js/precursor/FontPrecursor.js';
 
 export function mapGlyphForApp(glyph) {
 	return _.map(
@@ -24,10 +25,13 @@ export function mapGlyphForApp(glyph) {
 }
 
 export async function setupFontInstance(appValues) {
-		const template = appValues.values.familySelected ? appValues.values.familySelected.template : undefined;
-		const typedataJSON = await Typefaces.getFont(template || 'venus.ptf');
-		const typedata = JSON.parse(typedataJSON);
+	const template = appValues.values.familySelected ? appValues.values.familySelected.template : undefined;
+	const typedataJSON = await Typefaces.getFont(template || 'venus.ptf');
+	const typedata = JSON.parse(typedataJSON);
 
+	const font = new FontPrecursor(typedata);
+
+		/*
 		// const prototypoSource = await Typefaces.getPrototypo();
 		const workerDeps = document.querySelector('script[src*=prototypo\\.]').src;
 
@@ -39,20 +43,18 @@ export async function setupFontInstance(appValues) {
 			font.font.altMap,
 			mapGlyphForApp
 		);
-		const subset = appValues.values.text + rawToEscapedContent(appValues.values.word, glyphs);*/
+		const subset = appValues.values.text + rawToEscapedContent(appValues.values.word, glyphs);
 
 	//font.subset = typeof subset === 'string' ? subset : '';
 	//font.displayChar(appValues.values.selected);
+		*/
 	return {
 		typedataJSON,
 		familyName: typedata.fontinfo.familyName,
 		controls: typedata.controls,
 		presets: typedata.presets,
 		tags: typedata.fontinfo.tags,
-		workerUrl,
-		workerDeps,
 		db: appValues.values.variantSelected.db,
-		//subset,
-		typedata
+		typedata,
 	};
 }
