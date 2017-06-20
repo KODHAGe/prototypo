@@ -34,6 +34,7 @@ import AccountSubscription from './components/account/account-subscription.compo
 import AccountConfirmPlan from './components/account/account-confirm-plan.components.jsx';
 import AccountOrganization from './components/account/account-organization.components.jsx';
 import AccountInvoiceList from './components/account/account-invoice-list.components.jsx';
+import AccountPrototypoLibrary from './components/account/account-prototypo-library.components.jsx';
 import Subscription from './components/account/subscription.components.jsx';
 import StartApp from './components/start/start-app.components.jsx';
 
@@ -323,6 +324,9 @@ selectRenderOptions(
 								</Route>
 								<Route path="organization" component={AccountDashboard} name="organization" onEnter={redirectToLogin}>
 									<IndexRoute component={AccountOrganization} />
+								</Route>
+								<Route path="prototypo-library" component={AccountDashboard} name="library" onEnter={redirectToLogin}>
+									<IndexRoute component={AccountPrototypoLibrary} />
 								</Route>
 								<Route path="subscribe" component={Subscription} name="subscribe" onEnter={redirectToSignup}></Route>
 							</Route>

@@ -104,6 +104,7 @@ class AccountSidebar extends React.Component {
 					{subscription && subscription.quantity > 1 && (
 						<AccountSidebarLink to="/account/organization" slug="organization" label="Manage sub users" />
 					)}
+					<AccountSidebarLink to="/account/prototypo-library" slug="account" label="Prototypo library"/>
 					<AccountSidebarLink to="/account/billing" slug="billing" label="Billing history" />
 				</ul>
 			</div>

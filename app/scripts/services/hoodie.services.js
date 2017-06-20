@@ -92,6 +92,21 @@ export default class HoodieApi {
 				.then(setupStripe);
 	}
 
+	static async createGraphCoolUser(email, password, firstName = 'there', lastName) {
+		const response = await apolloClient.mutate({
+			mutation: signUpAndLoginMutation,
+			variables: {
+				email,
+				password,
+				lastName,
+				firstName,
+			},
+		});
+
+		window.localStorage.setItem('graphcoolToken', response.data.signinUser.token);
+		graphCoolUserId = response.data.createUser.id;
+	}
+
 	static async login(user, password) {
 		const data = await hoodie.account.signIn(user, password);
 

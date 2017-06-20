@@ -41,6 +41,7 @@ export default class AccountDashboard extends React.Component {
 			confirm: "My account",
 			billing: "My account",
 			organization: "My account",
+			library: "My account",
 		};
 		const subtitles = {
 			home: `Hi ${this.state.firstname}!`,
