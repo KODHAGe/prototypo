@@ -1,5 +1,3 @@
-//import PrototypoCanvas from 'prototypo-canvas';
-
 import {Typefaces} from '../services/typefaces.services.js';
 
 import {rawToEscapedContent} from '../helpers/input-transform.helpers.js';
@@ -31,23 +29,6 @@ export async function setupFontInstance(appValues) {
 
 	const font = new FontPrecursor(typedata);
 
-		/*
-		// const prototypoSource = await Typefaces.getPrototypo();
-		const workerDeps = document.querySelector('script[src*=prototypo\\.]').src;
-
-		const workerUrl = '/prototypo-canvas/src/worker.js';
-
-	//await font.loadFont(typedata.fontinfo.familyName, typedataJSON, appValues.values.variantSelected.db);
-
-		/*const glyphs = _.mapValues(
-			font.font.altMap,
-			mapGlyphForApp
-		);
-		const subset = appValues.values.text + rawToEscapedContent(appValues.values.word, glyphs);
-
-	//font.subset = typeof subset === 'string' ? subset : '';
-	//font.displayChar(appValues.values.selected);
-		*/
 	return {
 		typedataJSON,
 		familyName: typedata.fontinfo.familyName,

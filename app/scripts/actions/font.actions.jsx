@@ -1,24 +1,21 @@
-/* global _, trackJs, _URL*/
+/* global _, trackJs */
 import XXHash from 'xxhashjs';
 import slug from 'slug';
 import {hashHistory} from 'react-router';
 
-import {userStore, prototypoStore, undoableStore, fontInstanceStore} from '../stores/creation.stores.jsx';
-import LocalServer from '../stores/local-server.stores.jsx';
-import LocalClient from '../stores/local-client.stores.jsx';
+import {userStore, prototypoStore, undoableStore, fontInstanceStore} from '../stores/creation.stores';
+import LocalServer from '../stores/local-server.stores';
+import LocalClient from '../stores/local-client.stores';
 
-import {Typefaces} from '../services/typefaces.services.js';
-import {FontValues} from '../services/values.services.js';
-import Log from '../services/log.services.js';
-import HoodieApi from '../services/hoodie.services.js';
-import {loadStuff} from '../helpers/appSetup.helpers.js';
+import FontMediator from '../prototypo.js/mediator/FontMediator';
 
-import {copyFontValues, loadFontValues, saveAppValues} from '../helpers/loadValues.helpers.js';
-import {BatchUpdate} from '../helpers/undo-stack.helpers.js';
+import {Typefaces} from '../services/typefaces.services';
+import {FontValues} from '../services/values.services';
+import Log from '../services/log.services';
+import {loadStuff} from '../helpers/appSetup.helpers';
 
-import FontPrecursor from '../prototypo.js/precursor/FontPrecursor.js';
-
-import WorkerPool from '../worker/worker-pool.js';
+import {copyFontValues, loadFontValues, saveAppValues} from '../helpers/loadValues.helpers';
+import {BatchUpdate} from '../helpers/undo-stack.helpers';
 
 slug.defaults.mode = 'rfc3986';
 slug.defaults.modes.rfc3986.remove = /[-_\/\\\.]/g;
@@ -66,7 +63,7 @@ window.addEventListener('fluxServer.setup', () => {
 const hasher = XXHash(0xDEADBEEF);
 
 export default {
-	'/create-font-instance': ({typedataJSON, appValues}) => {
+	'/create-font-instance': ({typedataJSON, appValues, templateToLoad}) => {
 		const typedata = JSON.parse(typedataJSON);
 		const familyName = typedata.fontinfo.familyName;
 		const controls = typedata.controls;
@@ -78,6 +75,7 @@ export default {
 			familyName,
 			db,
 			typedata,
+			templateToLoad,
 		});
 
 		localClient.dispatchAction('/create-font', typedata);
@@ -93,6 +91,7 @@ export default {
 			localClient.dispatchAction('/create-font-instance', {
 				typedataJSON,
 				appValues,
+				templateToLoad: template || 'venus.ptf',
 			});
 		}
 		catch (err) {
@@ -102,7 +101,6 @@ export default {
 
 	},
 	'/create-font': (typedata) => {
-		const fontWorkerPool = new WorkerPool();
 		const glyphs = {};
 
 		_.forIn(typedata.glyphs, (glyph) => {
@@ -114,43 +112,20 @@ export default {
 
 		localClient.dispatchAction('/load-glyphs', glyphs);
 
-		fontWorkerPool.eachJob({
-			action: {
-				type: 'createFont',
-				data: typedata,
-			},
-			callback: (data) => {
-				localClient.dispatchAction('/store-value-font', {
-					fontWorkerPool,
-				});
-
-				const initParams = {};
-
-				typedata.controls.forEach((control) => {
-					control.parameters.forEach((param) => {
-						initParams[param.name] = param.init;
-					});
-				});
-
-				localClient.dispatchAction('/change-param', initParams);
-			},
-		});
-
-		fontMaker = new FontPrecursor(typedata);
-
 		const patch = prototypoStore
 			.set('fontName', typedata.fontinfo.familyName)
 			.commit();
 
 		localServer.dispatchUpdate('/prototypoStore', patch);
 	},
-	'/change-font-from-typedata': async ({typedataJSON, db}) => {
+	'/change-font-from-typedata': async ({typedataJSON, db, templateToLoad}) => {
 		const typedata = JSON.parse(typedataJSON);
 
 		localClient.dispatchAction('/store-value-font', {
 			familyName: typedata.fontinfo.familyName,
 			db,
 			typedataJSON,
+			templateToLoad,
 		});
 
 		localClient.dispatchAction('/create-font', typedata);
@@ -167,6 +142,7 @@ export default {
 		localClient.dispatchAction('/change-font-from-typedata', {
 			typedataJSON,
 			db,
+			templateToLoad,
 		});
 		localClient.dispatchAction('/toggle-individualize', {targetIndivValue: false});
 		localClient.dispatchAction('/store-value', {uiSpacingMode: false});
@@ -586,7 +562,6 @@ export default {
 		const patch = undoableStore.set('controlsValues', newParams).commit();
 
 		localServer.dispatchUpdate('/undoableStore', patch);
-		localClient.dispatchAction('/update-font', newParams);
 
 		debouncedSave(newParams, db);
 		if (force) {
@@ -611,7 +586,6 @@ export default {
 		const patch = undoableStore.set('controlsValues', newParams).commit();
 
 		localServer.dispatchUpdate('/undoableStore', patch);
-		localClient.dispatchAction('/update-font', newParams);
 		debouncedSave(newParams, db);
 
 		if (force) {
@@ -645,7 +619,6 @@ export default {
 		const patch = undoableStore.set('controlsValues', newParams).commit();
 
 		localServer.dispatchUpdate('/undoableStore', patch);
-		localClient.dispatchAction('/update-font', newParams);
 
 		debouncedSave(newParams, db);
 
@@ -682,7 +655,6 @@ export default {
 		const patch = undoableStore.set('controlsValues', newParams).commit();
 
 		localServer.dispatchUpdate('/undoableStore', patch);
-		localClient.dispatchAction('/update-font', newParams);
 
 		debouncedSave(newParams, db);
 
@@ -724,7 +696,6 @@ export default {
 		const patch = undoableStore.set('controlsValues', newParams).commit();
 
 		localServer.dispatchUpdate('/undoableStore', patch);
-		localClient.dispatchAction('/update-font', newParams);
 
 		debouncedSave(newParams, db);
 
@@ -750,7 +721,6 @@ export default {
 		const patch = undoableStore.set('controlsValues', newParams).commit();
 
 		localServer.dispatchUpdate('/undoableStore', patch);
-		localClient.dispatchAction('/update-font', newParams);
 
 		debouncedSave(newParams, db);
 
@@ -761,7 +731,6 @@ export default {
 			undoWatcher.update(patch, label);
 		}
 	},
-
 	'/reset-all-glyphs': ({force = true, label = 'reset all glyphs'}) => {
 		const db = (prototypoStore.get('variant') || {}).db;
 		const oldValues = undoableStore.get('controlsValues');
@@ -773,7 +742,6 @@ export default {
 		const patch = undoableStore.set('controlsValues', newParams).commit();
 
 		localServer.dispatchUpdate('/undoableStore', patch);
-		localClient.dispatchAction('/update-font', newParams);
 
 		debouncedSave(newParams, db);
 
@@ -801,7 +769,6 @@ export default {
 		const patch = undoableStore.set('controlsValues', newParams).commit();
 
 		localServer.dispatchUpdate('/undoableStore', patch);
-		localClient.dispatchAction('/update-font', newParams);
 
 		debouncedSave(newParams, db);
 
@@ -817,102 +784,5 @@ export default {
 				label: 'preset',
 			});
 		}
-	},
-	'/update-font': (params) => {
-		const pool = fontInstanceStore.get('fontWorkerPool');
-		const subsetString = prototypoStore.get('uiText') + prototypoStore.get('uiWord');
-		const glyphCanvasUnicode = prototypoStore.get('glyphSelected');
-		const altList = prototypoStore.get('altList');
-		const jobs = [];
-		const subset = _.map(
-			_.uniq(subsetString.split('')),
-			(letter) => {
-				return letter.charCodeAt(0);
-			}
-		);
-		const fontPromise = _.chunk(subset, Math.ceil(subset.length / pool.workerArray.length))
-			.map((subsubset) => {
-				return new Promise((resolve) => {
-					jobs.push({
-						action: {
-							type: 'constructGlyphs',
-							data: {
-								params: {
-									...params,
-									altList,
-								},
-								subset: subsubset,
-							},
-						},
-						callback: (font) => {
-							resolve(font);
-						},
-					});
-				});
-			});
-
-		pool.doJobs(jobs);
-
-		Promise.all(fontPromise).then((fonts) => {
-			let fontResult;
-
-			fonts.forEach(({font}) => {
-				if (fontResult) {
-					fontResult.glyphs = [
-						...fontResult.glyphs,
-						...font.glyphs,
-					];
-				}
-				else {
-					fontResult = font;
-				}
-			});
-
-			pool.doFastJob({
-				action: {
-					type: 'makeOtf',
-					data: {
-						fontResult,
-					},
-				},
-				callback: ({arrayBuffer}) => {
-					if (params.trigger) {
-						 triggerDownload(arrayBuffer.buffer, 'hello');
-					}
-
-					const fontFace = new FontFace(
-						prototypoStore.get('fontName'),
-						arrayBuffer.buffer,
-					);
-
-					if (oldFont) {
-						if (window.requestIdleCallback) {
-							window.requestIdleCallback(() => {
-								document.fonts.delete(oldFont);
-							});
-						}
-						else {
-							document.fonts.delete(oldFont);
-						}
-					}
-
-					document.fonts.add(fontFace);
-					oldFont = fontFace;
-				},
-			});
-
-			localClient.dispatchAction('/store-value-font', {
-				font: fontResult,
-			});
-		});
-
-		const glyphForCanvas = fontMaker.constructFont({
-			...params,
-			altList,
-		}, [glyphCanvasUnicode]);
-
-		localClient.dispatchAction('/store-value-font', {
-			glyph: glyphForCanvas.glyphs[0],
-		});
 	},
 };

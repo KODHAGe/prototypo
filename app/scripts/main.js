@@ -12,6 +12,7 @@ import IAmMobile from './components/i-am-mobile.components';
 import App from './app';
 
 import HoodieApi from './services/hoodie.services';
+import {Typefaces} from './services/typefaces.services';
 import LocalClient from './stores/local-client.stores';
 import LocalServer from './stores/local-server.stores';
 import Stores from './stores/creation.stores';
@@ -19,6 +20,8 @@ import Stores from './stores/creation.stores';
 import selectRenderOptions from './helpers/userAgent.helpers';
 import {loadStuff} from './helpers/appSetup.helpers';
 import isProduction from './helpers/is-production.helpers';
+
+import FontMediator from './prototypo.js/mediator/FontMediator';
 
 import appValuesAction from './actions/appValues.actions';
 import exportAction from './actions/export.actions';
@@ -33,7 +36,7 @@ import searchAction from './actions/search.actions';
 import tagStoreAction from './actions/tagStore.actions';
 import undoStackAction from './actions/undoStack.actions';
 import userLifecycleAction from './actions/user-lifecycle.actions';
-import academyAction from './actions/academy.actions.jsx';
+import academyAction from './actions/academy.actions';
 
 import EventDebugger, {debugActions} from './debug/eventLogging.debug';
 
@@ -41,11 +44,6 @@ pleaseWait.instance = pleaseWait.pleaseWait({
 	logo: '/assets/images/prototypo-loading.svg',
 	// backgroundColor: '#49e4a9',
 	loadingHtml: 'Hello Prototypo',
-});
-
-window.addEventListener('unload', () => {
-	worker.port.postMessage({type: 'closeAll'});
-	worker.port.close();
 });
 
 selectRenderOptions(
@@ -59,7 +57,7 @@ selectRenderOptions(
 
 		ReactDOM.render(<NotABrowser />, content);
 	},
-	() => {
+	async () => {
 		const stripeKey = isProduction()
 			? 'pk_live_CVrzdDZTEowrAZaRizc4G14c'
 			: 'pk_test_PkwKlOWOqSoimNJo2vsT21sE';
@@ -86,6 +84,19 @@ selectRenderOptions(
 		window.dispatchEvent(fluxEvent);
 
 		const eventDebugger = new EventDebugger();
+
+		const templates = await Promise.all(
+			prototypoStore.get('templateList').map(async ({templateName}) => {
+				const typedataJSON = await Typefaces.getFont(templateName);
+
+				return {
+					name: templateName,
+					json: JSON.parse(typedataJSON),
+				};
+			}),
+		);
+
+		await FontMediator.init(templates);
 
 		async function createStores() {
 			const actions = Object.assign(
